@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>简易多人聊天</title>
+    <style>
+        body { max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; }
+        #registerForm { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        #chatArea { display: none; }
+        #messages { border: 1px solid #ccc; height: 400px; overflow-y: auto; padding: 10px; margin-bottom: 10px; }
+        #messageForm { display: flex; gap: 10px; }
+        #messageInput, #usernameInput { padding: 8px; font-size: 16px; }
+        #messageInput { flex: 1; }
+        button { padding: 8px 16px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .message { margin-bottom: 8px; padding: 8px; border-radius: 4px; }
+        .message:nth-child(odd) { background-color: #f0f0f0; }
+        .username { font-weight: bold; margin-right: 8px; color: #2c3e50; }
+    </style>
+</head>
+<body>
+    <h1>简易在线聊天</h1>
+    
+    <div id="registerForm">
+        <input type="text" id="usernameInput" autocomplete="off" placeholder="请输入用户名">
+        <button onclick="registerUser()">注册并进入聊天</button>
+    </div>
+    
+    <div id="chatArea">
+        <div id="messages"></div>
+        <form id="messageForm">
+            <input type="text" id="messageInput" autocomplete="off" placeholder="输入消息...">
+            <button>发送</button>
+        </form>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const registerForm = document.getElementById('registerForm');
+        const chatArea = document.getElementById('chatArea');
+        const usernameInput = document.getElementById('usernameInput');
+        const messages = document.getElementById('messages');
+        const form = document.getElementById('messageForm');
+        const input = document.getElementById('messageInput');
+
+        function registerUser() {
+            const username = usernameInput.value.trim();
+            if (username) {
+                socket.emit('user register', username);
+            }
+        }
+
+        // 注册成功后显示聊天区域
+        socket.on('register success', () => {
+            registerForm.style.display = 'none';
+            chatArea.style.display = 'block';
+            input.focus();
+        });
+
+        // 发送消息
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (input.value) {
+                socket.emit('chat message', input.value);
+                input.value = '';
+            }
+        });
+
+        // 接收消息并显示
+        socket.on('chat message', (data) => {
+            const item = document.createElement('div');
+            item.className = 'message';
+            item.innerHTML = `<span class="username">${data.username}:</span> ${data.message}`;
+            messages.appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+        });
+    </script>
+</body>
+</html>
